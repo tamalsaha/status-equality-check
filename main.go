@@ -53,8 +53,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	r2 := StatusEqual(d2, d2)
-	fmt.Println(r2)
+	fmt.Println(StatusEqual(d2, d2))
 }
 
 func StatusEqual(old, new interface{}) bool {
@@ -112,16 +111,12 @@ func condEqual(old, nu []Condition) bool {
 	if len(old) != len(nu) {
 		return false
 	}
-	oldmap := make(map[string]Condition, len(old))
+	oldmap := make(map[Condition]bool, len(old))
 	for _, c := range old {
-		oldmap[c.Type] = c
+		oldmap[c] = true
 	}
 	for _, c := range nu {
-		e, ok := oldmap[c.Type]
-		if !ok {
-			return false
-		}
-		if e != c {
+		if !oldmap[c] {
 			return false
 		}
 	}
@@ -141,7 +136,6 @@ func StatusMapEqual(old, nu map[string]interface{}) bool {
 		}
 		if key == "conditions" {
 			// special case
-			// TODO(tamal): test this
 			oldCond := make([]Condition, 0)
 			if err := meta_util.DecodeObject(oldVal, &oldCond); err != nil {
 				klog.Errorln(err)
