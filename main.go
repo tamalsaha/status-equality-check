@@ -2,10 +2,16 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"path/filepath"
 	"reflect"
+	"time"
+
+	"gomodules.xyz/pointer"
+	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
 
 	"github.com/fatih/structs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,7 +25,53 @@ import (
 	meta_util "kmodules.xyz/client-go/meta"
 )
 
+var d11 = &apps.Deployment{
+	TypeMeta: metav1.TypeMeta{
+		APIVersion: apps.SchemeGroupVersion.String(),
+		Kind:       "Deployment",
+	},
+	ObjectMeta: metav1.ObjectMeta{
+		Namespace: "demo",
+		Name:      "d1",
+	},
+	Spec: apps.DeploymentSpec{
+		Replicas: pointer.Int32P(3),
+	},
+	Status: apps.DeploymentStatus{
+		ObservedGeneration:  2,
+		Replicas:            3,
+		UpdatedReplicas:     3,
+		ReadyReplicas:       3,
+		AvailableReplicas:   3,
+		UnavailableReplicas: 0,
+		Conditions: []apps.DeploymentCondition{
+			{
+				Type:               "Available",
+				Status:             core.ConditionTrue,
+				LastUpdateTime:     metav1.NewTime(time.Now().Add(5 * time.Minute)),
+				LastTransitionTime: metav1.NewTime(time.Now().Add(5 * time.Minute)),
+				Reason:             "MinimumReplicasAvailable",
+				Message:            "Deployment has minimum availability.",
+			},
+			{
+				Type:               "Progressing",
+				Status:             core.ConditionFalse,
+				LastUpdateTime:     metav1.NewTime(time.Now().Add(5 * time.Minute)),
+				LastTransitionTime: metav1.NewTime(time.Now().Add(5 * time.Minute)),
+				Reason:             "NewReplicaSetAvailable",
+				Message:            "ReplicaSet \"d1\" has successfully progressed.",
+			},
+		},
+	},
+}
+
 func main() {
+	data, err := json.MarshalIndent(d11, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(data))
+
 	masterURL := ""
 	kubeconfigPath := filepath.Join(homedir.HomeDir(), ".kube", "config")
 
