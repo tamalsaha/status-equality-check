@@ -7,15 +7,15 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/klog/v2"
-
 	"github.com/fatih/structs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	"k8s.io/klog/v2"
 	meta_util "kmodules.xyz/client-go/meta"
 )
 
@@ -36,18 +36,25 @@ func main() {
 
 	dc := dynamic.NewForConfigOrDie(config)
 
-	// kube-system          kube-apiserver-kind-control-plane
-	gvrPod := schema.GroupVersionResource{
-		Group:    "",
+	// kube-system          coredns
+	gvrDeploy := schema.GroupVersionResource{
+		Group:    "apps",
 		Version:  "v1",
-		Resource: "pods",
+		Resource: "deployments",
 	}
-	pod, err := dc.Resource(gvrPod).Namespace("kube-system").Get(context.TODO(), "kube-apiserver-kind-control-plane", metav1.GetOptions{})
+	d1, err := dc.Resource(gvrDeploy).Namespace("kube-system").Get(context.TODO(), "coredns", metav1.GetOptions{})
 	if err != nil {
 		panic(err)
 	}
-	v := pod.Object["rt"]
-	fmt.Println(reflect.TypeOf(v).Kind())
+	fmt.Println(StatusEqual(d1, d1))
+
+	kc := kubernetes.NewForConfigOrDie(config)
+	d2, err := kc.AppsV1().Deployments("kube-system").Get(context.TODO(), "coredns", metav1.GetOptions{})
+	if err != nil {
+		panic(err)
+	}
+	r2 := StatusEqual(d2, d2)
+	fmt.Println(r2)
 }
 
 func StatusEqual(old, new interface{}) bool {
@@ -134,6 +141,7 @@ func StatusMapEqual(old, nu map[string]interface{}) bool {
 		}
 		if key == "conditions" {
 			// special case
+			// TODO(tamal): test this
 			oldCond := make([]Condition, 0)
 			if err := meta_util.DecodeObject(oldVal, &oldCond); err != nil {
 				klog.Errorln(err)
