@@ -19,12 +19,6 @@ import (
 	meta_util "kmodules.xyz/client-go/meta"
 )
 
-type Condition struct {
-	Type               string `json:"type"`
-	Status             string `json:"status"`
-	ObservedGeneration int64  `json:"observedGeneration,omitempty"`
-}
-
 func main() {
 	masterURL := ""
 	kubeconfigPath := filepath.Join(homedir.HomeDir(), ".kube", "config")
@@ -56,6 +50,12 @@ func main() {
 	fmt.Println(StatusEqual(d2, d2))
 }
 
+type Condition struct {
+	Type               string `json:"type"`
+	Status             string `json:"status"`
+	ObservedGeneration int64  `json:"observedGeneration,omitempty"`
+}
+
 func StatusEqual(old, new interface{}) bool {
 	oldStatus, oldExists := extractStatusFromObject(old)
 	newStatus, newExists := extractStatusFromObject(new)
@@ -69,7 +69,7 @@ func StatusEqual(old, new interface{}) bool {
 
 		var result bool
 		if oldKind == reflect.Map {
-			result = StatusMapEqual(oldStatus.(map[string]interface{}), newStatus.(map[string]interface{}))
+			result = statusMapEqual(oldStatus.(map[string]interface{}), newStatus.(map[string]interface{}))
 		} else {
 			oldStruct := structs.New(oldStatus)
 			oldStruct.TagName = "json"
@@ -78,7 +78,7 @@ func StatusEqual(old, new interface{}) bool {
 			newStruct.TagName = "json"
 
 			// map does not handle nested maps?
-			result = StatusMapEqual(oldStruct.Map(), newStruct.Map())
+			result = statusMapEqual(oldStruct.Map(), newStruct.Map())
 		}
 		if !result {
 			if diff, err := meta_util.JsonDiff(oldStatus, newStatus); err == nil {
@@ -106,24 +106,24 @@ func extractStatusFromObject(o interface{}) (interface{}, bool) {
 	panic(fmt.Errorf("unknown object %v", reflect.TypeOf(o)))
 }
 
-func condEqual(old, nu []Condition) bool {
+func conditionsEqual(old, nu []Condition) bool {
 	// optimization
 	if len(old) != len(nu) {
 		return false
 	}
-	oldmap := make(map[Condition]bool, len(old))
+	oldMap := make(map[Condition]bool, len(old))
 	for _, c := range old {
-		oldmap[c] = true
+		oldMap[c] = true
 	}
 	for _, c := range nu {
-		if !oldmap[c] {
+		if !oldMap[c] {
 			return false
 		}
 	}
 	return true
 }
 
-func StatusMapEqual(old, nu map[string]interface{}) bool {
+func statusMapEqual(old, nu map[string]interface{}) bool {
 	// optimization
 	if len(old) != len(nu) {
 		return false
@@ -146,7 +146,7 @@ func StatusMapEqual(old, nu map[string]interface{}) bool {
 				klog.Errorln(err)
 				return false
 			}
-			if !condEqual(oldCond, nuCond) {
+			if !conditionsEqual(oldCond, nuCond) {
 				return false
 			}
 		} else if !reflect.DeepEqual(oldVal, newVal) {
