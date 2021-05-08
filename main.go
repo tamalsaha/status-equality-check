@@ -2,15 +2,29 @@ package main
 
 import (
 	"fmt"
-	meta_util "kmodules.xyz/client-go/meta"
+	"log"
+	"path/filepath"
 	"reflect"
 
 	"github.com/fatih/structs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
+	meta_util "kmodules.xyz/client-go/meta"
 )
 
 func main() {
+	masterURL := ""
+	kubeconfigPath := filepath.Join(homedir.HomeDir(), ".kube", "config")
+
+	config, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfigPath)
+	if err != nil {
+		log.Fatalf("Could not get Kubernetes config: %s", err)
+	}
+
+	dc2 := dynamic.NewForConfigOrDie(config)
 
 }
 
