@@ -1,6 +1,28 @@
 package main
 
-import "testing"
+import (
+	v1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"testing"
+	"gomodules.xyz/pointer"
+)
+
+var (
+	d1 = &v1.Deployment{
+		TypeMeta:   metav1.TypeMeta{
+			APIVersion: v1.SchemeGroupVersion.String(),
+			Kind:       "Deployment",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "demo",
+			Name: "d1",
+		},
+		Spec:       v1.DeploymentSpec{
+			Replicas: pointer.Int32P(3),
+		},
+		Status:     v1.DeploymentStatus{},
+	}
+)
 
 func TestStatusEqual(t *testing.T) {
 	type args struct {
