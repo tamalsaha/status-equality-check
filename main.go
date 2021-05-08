@@ -77,10 +77,9 @@ func StatusEqual(old, new interface{}) bool {
 			newStruct := structs.New(newStatus)
 			newStruct.TagName = "json"
 
-			// map does not handle nested maps?
 			result = statusMapEqual(oldStruct.Map(), newStruct.Map())
 		}
-		if !result {
+		if !result && klog.V(8).Enabled() {
 			if diff, err := meta_util.JsonDiff(oldStatus, newStatus); err == nil {
 				klog.V(8).Infoln(diff)
 			}
